@@ -1,0 +1,40 @@
+{
+  "setting": [
+    {
+      "hour": "5:40",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/7.jpg"
+    },
+    {
+      "hour": "6:40",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/0.jpg"
+    },
+    {
+      "hour": "7:00",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/1.jpg"
+    },
+    {
+      "hour": "11:00",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/2.jpg"
+    },
+    {
+      "hour": "17:30",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/3.jpg"
+    },
+    {
+      "hour": "18:00",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/4.jpg"
+    },
+    {
+      "hour": "18:30",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/5.jpg"
+    },
+    {
+      "hour": "19:00",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/6.jpg"
+    },
+    {
+      "hour": "00:00",
+      "image": "/home/kitsune/Imagens/big sur wallpapers/7.jpg"
+    }
+  ]
+}
