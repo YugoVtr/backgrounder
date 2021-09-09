@@ -3,4 +3,4 @@ generate-mock:
 
 build:
 	mkdir -p bin
-	go build  -o bin/backgrounder cmd/main.go
+	go build -o bin/backgrounder cmd/changer.go

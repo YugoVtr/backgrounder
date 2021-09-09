@@ -2,11 +2,15 @@ package internal
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/golang/mock/gomock"
+	"github.com/yugovtr/exec"
 	"github.com/yugovtr/mock"
 )
 
@@ -22,7 +26,6 @@ func TestSelectImage(t *testing.T) {
 		now       string
 		wantImage string
 		wantErr   bool
-		prepare   func(*mock.MockTimer, string)
 	}{
 		{
 			name:      "when is it dawn",
@@ -30,12 +33,6 @@ func TestSelectImage(t *testing.T) {
 			config:    bytes.NewBuffer([]byte(Content)),
 			wantImage: "1.jpg",
 			wantErr:   false,
-			prepare: func(m *mock.MockTimer, now string) {
-				m.EXPECT().Now().DoAndReturn(func() time.Time {
-					t, _ := time.Parse(Hour, now)
-					return t
-				})
-			},
 		},
 		{
 			name:      "when it is day",
@@ -43,12 +40,6 @@ func TestSelectImage(t *testing.T) {
 			config:    bytes.NewBuffer([]byte(Content)),
 			wantImage: "2.jpg",
 			wantErr:   false,
-			prepare: func(m *mock.MockTimer, now string) {
-				m.EXPECT().Now().DoAndReturn(func() time.Time {
-					t, _ := time.Parse(Hour, now)
-					return t
-				})
-			},
 		},
 		{
 			name:      "when it is nightfall",
@@ -56,12 +47,6 @@ func TestSelectImage(t *testing.T) {
 			config:    bytes.NewBuffer([]byte(Content)),
 			wantImage: "3.jpg",
 			wantErr:   false,
-			prepare: func(m *mock.MockTimer, now string) {
-				m.EXPECT().Now().DoAndReturn(func() time.Time {
-					t, _ := time.Parse(Hour, now)
-					return t
-				})
-			},
 		},
 		{
 			name:      "when it is night",
@@ -69,12 +54,6 @@ func TestSelectImage(t *testing.T) {
 			config:    bytes.NewBuffer([]byte(Content)),
 			wantImage: "3.jpg",
 			wantErr:   false,
-			prepare: func(m *mock.MockTimer, now string) {
-				m.EXPECT().Now().DoAndReturn(func() time.Time {
-					t, _ := time.Parse(Hour, now)
-					return t
-				})
-			},
 		},
 		{
 			name:      "when has error in hour",
@@ -82,12 +61,6 @@ func TestSelectImage(t *testing.T) {
 			config:    bytes.NewBuffer([]byte(`{"setting": [{"hour": "12","image": "1.jpg"}]}`)),
 			wantImage: "",
 			wantErr:   true,
-			prepare: func(m *mock.MockTimer, now string) {
-				m.EXPECT().Now().DoAndReturn(func() time.Time {
-					t, _ := time.Parse(Hour, now)
-					return t
-				})
-			},
 		},
 		{
 			name:      "when has error in file",
@@ -95,35 +68,26 @@ func TestSelectImage(t *testing.T) {
 			config:    bytes.NewBuffer([]byte(`Lorem Ipsum is simply dummy text of the printing and typesetting industry.`)),
 			wantImage: "",
 			wantErr:   true,
-			prepare: func(m *mock.MockTimer, now string) {
-				m.EXPECT().Now().DoAndReturn(func() time.Time {
-					t, _ := time.Parse(Hour, now)
-					return t
-				})
-			},
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			mock := func() time.Time {
+				now, err := time.Parse(Hour, tt.now)
 
-			m := mock.NewMockTimer(ctrl)
-			if tt.prepare != nil {
-				tt.prepare(m, tt.now)
+				assert.NoError(t, err, "SelectImage() parse test case %s", tt.now)
+				return now
 			}
 
-			gotI, err := SelectImage(tt.config, m)
+			gotI, err := SelectImage(tt.config, mock)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SelectImage() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotI != tt.wantImage {
-				t.Errorf("SelectImage() = %v, want %v", gotI, tt.wantImage)
-			}
+			assert.Equal(t, (err != nil), tt.wantErr, "SelectImage() error = %v, wantErr %v", err, tt.wantErr)
+			assert.Equal(t, gotI, tt.wantImage, "SelectImage() = %v, want %v", gotI, tt.wantImage)
 		})
 	}
 }
@@ -133,31 +97,51 @@ func TestChangeWallpaper(t *testing.T) {
 		name    string
 		wantErr bool
 		image   string
-		prepare func(*mock.MockExec)
+		prepare func(*mock.MockCmd)
 	}{
 		{
-			name:    "",
+			name:    "when has no errors",
 			wantErr: false,
 			image:   "1.jpg",
-			prepare: func(m *mock.MockExec) {
-				m.EXPECT().Run(nil, "gsettings", "set", "org.gnome.desktop.background", "picture-uri", "1.jpg").Return(nil)
+			prepare: func(m *mock.MockCmd) {
+				m.EXPECT().Run().Return(nil)
+			},
+		},
+		{
+			name:    "when has errors",
+			wantErr: true,
+			image:   "2.jpg",
+			prepare: func(m *mock.MockCmd) {
+				m.EXPECT().Run().Return(errors.New(""))
 			},
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			m := mock.NewMockExec(ctrl)
+			m := mock.NewMockCmd(ctrl)
 			if tt.prepare != nil {
 				tt.prepare(m)
 			}
 
-			if err := ChangeWallpaper(tt.image, m); (err != nil) != tt.wantErr {
-				t.Errorf("ChangeWallpaper() error = %v, wantErr %v", err, tt.wantErr)
+			mock := func(command string, args ...string) exec.Cmd {
+				wantCommand := "gsettings"
+				wantArgs := []string{"set", "org.gnome.desktop.background", "picture-uri", tt.image}
+
+				assert.Equal(t, wantCommand, command, "ChangeWallpaper() command = %v, want %v", command, wantCommand)
+				assert.Equal(t, wantArgs, args, "ChangeWallpaper() args = %v, want %v", args, wantArgs)
+
+				return m
 			}
+
+			err := ChangeWallpaper(tt.image, mock)
+			assert.Equal(t, (err != nil), tt.wantErr, "ChangeWallpaper() error = %v, wantErr %v", err, tt.wantErr)
 		})
 	}
 }

@@ -5,50 +5,59 @@
 package mock
 
 import (
-	io "io"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockExec is a mock of Exec interface.
-type MockExec struct {
+// MockCmd is a mock of Cmd interface.
+type MockCmd struct {
 	ctrl     *gomock.Controller
-	recorder *MockExecMockRecorder
+	recorder *MockCmdMockRecorder
 }
 
-// MockExecMockRecorder is the mock recorder for MockExec.
-type MockExecMockRecorder struct {
-	mock *MockExec
+// MockCmdMockRecorder is the mock recorder for MockCmd.
+type MockCmdMockRecorder struct {
+	mock *MockCmd
 }
 
-// NewMockExec creates a new mock instance.
-func NewMockExec(ctrl *gomock.Controller) *MockExec {
-	mock := &MockExec{ctrl: ctrl}
-	mock.recorder = &MockExecMockRecorder{mock}
+// NewMockCmd creates a new mock instance.
+func NewMockCmd(ctrl *gomock.Controller) *MockCmd {
+	mock := &MockCmd{ctrl: ctrl}
+	mock.recorder = &MockCmdMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockExec) EXPECT() *MockExecMockRecorder {
+func (m *MockCmd) EXPECT() *MockCmdMockRecorder {
 	return m.recorder
 }
 
-// Run mocks base method.
-func (m *MockExec) Run(arg0 io.Writer, arg1 string, arg2 ...string) error {
+// Output mocks base method.
+func (m *MockCmd) Output() ([]byte, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Run", varargs...)
+	ret := m.ctrl.Call(m, "Output")
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Output indicates an expected call of Output.
+func (mr *MockCmdMockRecorder) Output() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Output", reflect.TypeOf((*MockCmd)(nil).Output))
+}
+
+// Run mocks base method.
+func (m *MockCmd) Run() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Run")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Run indicates an expected call of Run.
-func (mr *MockExecMockRecorder) Run(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockCmdMockRecorder) Run() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockExec)(nil).Run), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockCmd)(nil).Run))
 }

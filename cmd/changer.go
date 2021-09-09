@@ -7,9 +7,8 @@ import (
 	"os"
 	"time"
 
-	exec "github.com/yugovtr/executor"
+	"github.com/yugovtr/exec"
 	"github.com/yugovtr/internal"
-	"github.com/yugovtr/timer"
 )
 
 const (
@@ -22,9 +21,11 @@ func main() {
 
 	flag.Parse()
 
-	t := timer.New()
+	t := time.Now
 	if h, err := time.Parse("15:04", *hour); len(*hour) == 5 && err == nil {
-		t.Travel(&h)
+		t = func() time.Time {
+			return h
+		}
 	}
 
 	content, err := os.ReadFile(*config)
@@ -41,7 +42,7 @@ func main() {
 
 	fmt.Printf("Set image \"%s\"\n", img)
 
-	if err := internal.ChangeWallpaper(img, exec.New()); err != nil {
+	if err := internal.ChangeWallpaper(img, exec.Command); err != nil {
 		exit(err)
 	}
 
